@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "target": "es2016",  
+    "module": "esnext",  
+    "moduleResolution": "Node",
+    "esModuleInterop": true, 
+    "allowSyntheticDefaultImports":true,
+    "forceConsistentCasingInFileNames": true,  
+    "strict": true,   
+    "skipLibCheck": false,
+    "allowJs": true,
+    "outDir": "./dist",
+    "paths":{"tailwindcss-ts":["./src/index.ts"]},
+    "declaration": true,
+  },
+  "ts-node": {
+    // Tell ts-node CLI to install the --loader automatically, explained below
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist"],
+}
