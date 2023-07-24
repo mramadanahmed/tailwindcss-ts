@@ -1,9 +1,6 @@
 #! /usr/bin/env node
 
-import defaultTheme from "tailwindcss/defaultTheme";
-import defaultColors from "tailwindcss/colors";
 import { Config as TailwindCssConfig } from "tailwindcss";
-import merge from "lodash/merge";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -11,6 +8,17 @@ import prettier from "prettier";
 import { rollup } from "rollup";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
+import { generateColors } from "./generators/colors";
+import { generateSpacing } from "./generators/spacing";
+import { generateScreens } from "./generators/screens";
+import { GeneratorFn } from "./utils/types";
+import { generateFontSize } from "./generators/fontSizes";
+import { generateBoxShadow } from "./generators/boxShadow";
+import { generateDropShadow } from "./generators/dropShadow";
+import { generateFontWeight } from "./generators/fontWeight";
+import { generateFontFamily } from "./generators/fontFamily";
+import { generateObjectPosition } from "./generators/objectPosition";
+import { generatePosition } from "./generators/position";
 
 export type TWSConfig = {
   tailwindConfig?: string;
@@ -72,58 +80,17 @@ const generateTWS = async () => {
 
   const js = jsModule.default;
 
-  const extendedTheme = js?.theme?.extend ?? {};
-
-  const extractValues = (
-    preKeys: string[],
-    configValue: ReturnType<typeof Object.entries>,
-    allClasses: string[]
-  ) => {
-    configValue.forEach(([key, value]: any) => {
-      if (typeof value === "string") {
-        allClasses.push(`${preKeys.join("-")}-${key}`);
-      } else {
-        extractValues([...preKeys, key], Object.entries(value), allClasses);
-      }
-    });
-  };
-
-  const generateColors = (prefix: "text" | "bg") => {
-    const colors = merge(
-      js?.theme?.colors ?? defaultColors,
-      extendedTheme.colors
-    );
-
-    const classes: any = [];
-    extractValues([prefix], Object.entries(colors), classes);
-    return classes.map((c: any) => `"${c}"`).join("|");
-  };
-
-  const generatePadding = (prefix: string) => {
-    const spacing = merge(
-      js?.theme?.spacing ?? defaultTheme.spacing,
-      extendedTheme.spacing
-    );
-
-    const classes: any = [];
-    extractValues([prefix], Object.entries(spacing), classes);
-    return classes.map((c: any) => `"${c}"`).join("|");
-  };
-
-  const textColors = generateColors("text");
-  const bgColors = generateColors("bg");
-
-  const padding = ["p", "px", "py", "pr", "pl", "ps", "pe", "pt", "pb"]
-    .map((prefix) => generatePadding(prefix))
-    .join("|");
-
-  const margin = ["m", "mx", "my", "mr", "ml", "ms", "me", "mt", "mb"]
-    .map((prefix) => generatePadding(prefix))
-    .join("|");
-
-  const spaceInBetween = ["space-x", "space-y"]
-    .map((prefix) => generatePadding(prefix))
-    .join("|");
+  const generators: GeneratorFn[] = [
+    generateColors,
+    generateSpacing,
+    generateFontSize,
+    generateBoxShadow,
+    generateDropShadow,
+    generateFontWeight,
+    generateFontFamily,
+    generateObjectPosition,
+    generatePosition,
+  ];
 
   if (fs.existsSync(generatePath))
     fs.rmSync(generatePath, {
@@ -133,10 +100,7 @@ const generateTWS = async () => {
   fs.mkdirSync(generatePath);
 
   const getModifiers = (() => {
-    const screens = merge(
-      js?.theme?.screens ?? defaultTheme.screens,
-      extendedTheme.screens
-    );
+    const screens = generateScreens(js?.theme);
 
     return [
       "hover",
@@ -152,23 +116,41 @@ const generateTWS = async () => {
     ].map((m) => `"${m}"?: \`${m}:$\{TWSClasses\}\`[];`);
   })();
 
+  const twsClasses: string[] = [];
+
+  generators.map((generator) => {
+    const classes = generator(js?.theme).map((className) => `"${className}"`);
+    classes.forEach((className) => {
+      twsClasses.push(className);
+    });
+  });
+
+  const importClasses = twsClasses.filter((a) => a.charAt(1) === "!").sort();
+  const minusSpacingClasses = twsClasses
+    .filter((a) => a.charAt(1) === "-")
+    .sort();
+  const remaining = twsClasses
+    .filter((a) => a.charAt(1) !== "!" && a.charAt(1) !== "-")
+    .sort();
+
+  const TWSTypes = [
+    remaining.length === 0 ? undefined : remaining.join("|"),
+    importClasses.length === 0 ? undefined : importClasses.join("|"),
+    minusSpacingClasses.length === 0
+      ? undefined
+      : minusSpacingClasses.join("|"),
+  ]
+    .filter((a) => !!a)
+    .join("|");
+
   const generatedTypes = [
-    `type TWSSpacesNegative = "" | "-";`,
-    `type TWSTextTypes = ${textColors};`,
-    `type TWSBgColors = ${bgColors};`,
-    `type TWSPadding = ${padding};`,
-    `type TWSMargin = ${margin};`,
-    `type TWSSpaceInBetween = ${spaceInBetween};`,
+    `type TWSTypes = ${TWSTypes};`,
     `type TWSPreprocess = "" | "!" ;`,
     `type TWSCustomTypes = ${(
       config.customClasses?.map((c) => `"${c}"`) ?? ["never"]
     ).join("|")}`,
     `export type TWSClasses = \`\${TWSPreprocess}\${
-    | TWSTextTypes
-    | TWSBgColors
-    | \`\${TWSSpacesNegative}\${TWSPadding}\`
-    | \`\${TWSSpacesNegative}\${TWSMargin}\`
-    | TWSSpaceInBetween
+    | TWSTypes
     | TWSCustomTypes}\`;`,
     `export type TWSModifiers = {
       default: TWSClasses[];
