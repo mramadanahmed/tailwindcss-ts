@@ -5,8 +5,8 @@ import { GeneratorFn } from "../utils/types";
 
 export const generateObjectPosition: GeneratorFn = (tailwindThemeConfig) => {
   const positions = merge(
-    tailwindThemeConfig?.objectPosition ?? defaultTheme.fontFamily,
-    tailwindThemeConfig?.objectPosition
+    tailwindThemeConfig?.objectPosition ?? defaultTheme.objectPosition,
+    tailwindThemeConfig?.extend?.objectPosition
   );
 
   const classes: string[] = [];

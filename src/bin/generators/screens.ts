@@ -10,5 +10,5 @@ export const generateScreens: GeneratorFn = (tailwindThemeConfig) => {
     )
   );
 
-  return screens;
+  return [...screens, ...screens.map((s) => `max-${s}`)];
 };

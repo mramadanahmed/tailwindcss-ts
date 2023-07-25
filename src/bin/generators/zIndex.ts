@@ -3,18 +3,18 @@ import defaultTheme from "tailwindcss/defaultTheme";
 import { extractValues } from "../utils/extract-values";
 import { GeneratorFn } from "../utils/types";
 
-export const generateFontFamily: GeneratorFn = (tailwindThemeConfig) => {
-  const fontFamily = merge(
-    tailwindThemeConfig?.fontFamily ?? defaultTheme.fontFamily,
-    tailwindThemeConfig?.extend?.fontFamily
+export const generateZIndex: GeneratorFn = (tailwindThemeConfig) => {
+  const zIndex = merge(
+    tailwindThemeConfig?.zIndex ?? defaultTheme.zIndex,
+    tailwindThemeConfig?.extend?.zIndex
   );
 
   const classes: string[] = [];
   const firstLevel: Record<string, string> = {};
-  Object.keys(fontFamily).forEach((key) => {
+  Object.keys(zIndex).forEach((key) => {
     firstLevel[key] = "";
   });
-  extractValues(["text"], Object.entries(firstLevel), classes);
+  extractValues(["z"], Object.entries(firstLevel), classes);
 
   return classes;
 };

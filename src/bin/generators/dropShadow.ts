@@ -6,7 +6,7 @@ import { GeneratorFn } from "../utils/types";
 export const generateDropShadow: GeneratorFn = (tailwindThemeConfig) => {
   const dropShadow = merge(
     tailwindThemeConfig?.dropShadow ?? defaultTheme.dropShadow,
-    tailwindThemeConfig?.dropShadow
+    tailwindThemeConfig?.extend?.dropShadow
   );
 
   const classes: string[] = [];

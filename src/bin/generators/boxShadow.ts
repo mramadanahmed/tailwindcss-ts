@@ -6,7 +6,7 @@ import { GeneratorFn } from "../utils/types";
 export const generateBoxShadow: GeneratorFn = (tailwindThemeConfig) => {
   const boxShadow = merge(
     tailwindThemeConfig?.boxShadow ?? defaultTheme.boxShadow,
-    tailwindThemeConfig?.boxShadow
+    tailwindThemeConfig?.extend?.boxShadow
   );
 
   const classes: string[] = [];

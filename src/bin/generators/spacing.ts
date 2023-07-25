@@ -6,7 +6,7 @@ import { GeneratorFn } from "../utils/types";
 export const generateSpacing: GeneratorFn = (tailwindThemeConfig) => {
   const spacing = merge(
     tailwindThemeConfig?.spacing ?? defaultTheme.spacing,
-    tailwindThemeConfig?.spacing
+    tailwindThemeConfig?.extend?.spacing
   );
 
   const classes: string[] = [];

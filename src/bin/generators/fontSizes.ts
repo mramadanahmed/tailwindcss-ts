@@ -6,7 +6,7 @@ import { GeneratorFn } from "../utils/types";
 export const generateFontSize: GeneratorFn = (tailwindThemeConfig) => {
   const fontSizes = merge(
     tailwindThemeConfig?.fontSize ?? defaultTheme.fontSize,
-    tailwindThemeConfig?.fontSize
+    tailwindThemeConfig?.extend?.fontSize
   );
 
   const classes: string[] = [];

@@ -18,7 +18,13 @@ import { generateDropShadow } from "./generators/dropShadow";
 import { generateFontWeight } from "./generators/fontWeight";
 import { generateFontFamily } from "./generators/fontFamily";
 import { generateObjectPosition } from "./generators/objectPosition";
-import { generatePosition } from "./generators/position";
+import { generateStandards } from "./generators/standards";
+import { twModifiers } from "./utils/modifiers";
+import { generateAnimations } from "./generators/animations";
+import { generateAspectRatio } from "./generators/aspectRatio";
+import { generateColumns } from "./generators/columns";
+import { generateTopLeftBottomRight } from "./generators/topLeftBottomRight";
+import { generateZIndex } from "./generators/zIndex";
 
 export type TWSConfig = {
   tailwindConfig?: string;
@@ -89,7 +95,12 @@ const generateTWS = async () => {
     generateFontWeight,
     generateFontFamily,
     generateObjectPosition,
-    generatePosition,
+    generateStandards,
+    generateAnimations,
+    generateAspectRatio,
+    generateColumns,
+    generateTopLeftBottomRight,
+    generateZIndex,
   ];
 
   if (fs.existsSync(generatePath))
@@ -102,18 +113,9 @@ const generateTWS = async () => {
   const getModifiers = (() => {
     const screens = generateScreens(js?.theme);
 
-    return [
-      "hover",
-      "focus",
-      "active",
-      "before",
-      "after",
-      "placeholder",
-      "selection",
-      "print",
-      "dark",
-      ...Object.keys(screens),
-    ].map((m) => `"${m}"?: \`${m}:$\{TWSClasses\}\`[];`);
+    return [...twModifiers, ...screens].map(
+      (m) => `"${m}"?: \`${m}:$\{TWSClasses\}\`[];`
+    );
   })();
 
   const twsClasses: string[] = [];
