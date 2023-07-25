@@ -63,13 +63,13 @@ Create a file with name `tws.json` so you can customize tailwindcss-ts main func
 
 # 🥷 Contributions
 Every one is welcomed to contribute on that package by raising a PR. Here is steps to run it locally
-1. Clone the [https://github.com/mramadanahmed/tailwindcss-ts](github repo) 
+1. Clone the [github repo](https://github.com/mramadanahmed/tailwindcss-ts)
 2. Run `pnpm i`
 3. Run `pnpm start`
    
 
 # 🧵 Bugs, Issues and Feedback
-Please submit a [https://github.com/mramadanahmed/tailwindcss-ts/issues/new](issue) at github for any kind of discussion related to that package. Looking forward to get in touch very soon
+Please submit [a new issue](https://github.com/mramadanahmed/tailwindcss-ts/issues/new) at github for any kind of discussion related to that package. Looking forward to get in touch very soon
 
 
 # 📚 Tailwindcss-ts
