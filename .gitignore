@@ -1,7 +1,7 @@
 .npmrc
 node_modules
 .DS_STORE
-/tws/*
 /tws-temp/*
 /dist/*
 pnpm-lock.yaml
+coverage/*
