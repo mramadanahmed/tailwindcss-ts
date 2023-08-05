@@ -1,46 +1,57 @@
-type TWSStyle<
+export type TWSStyle<
   TClasses extends string,
   TModifiers extends string,
   TScreen extends string = "",
 > = TScreen extends ""
   ?
+      | TClasses
       | TClasses[]
       | {
           [key in "default" | TModifiers]?: key extends "default"
-            ? TClasses[]
-            : `${key}:${TClasses}`[];
+            ? TClasses | TClasses[]
+            : `${key}:${TClasses}` | `${key}:${TClasses}`[];
         }
   :
+      | `${TScreen}:${TClasses}`
       | `${TScreen}:${TClasses}`[]
       | {
           [key in "default" | TModifiers]?: key extends "default"
-            ? `${TScreen}:${TClasses}`[]
-            : `${TScreen}:${key}:${TClasses}`[];
+            ? `${TScreen}:${TClasses}` | `${TScreen}:${TClasses}`[]
+            :
+                | `${TScreen}:${key}:${TClasses}`
+                | `${TScreen}:${key}:${TClasses}`[];
         };
 
-type TWSScreens<
+export type TWSStyleScreens<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
 > = {
-  [key in TScreens]?: TWSStyle<TClasses, TModifiers, key>;
+  [TScreen in TScreens]?: TWSStyle<TClasses, TModifiers, TScreen>;
 };
 
-type TWSStyleObjectItem<
+export type TWSStyleObjectItem<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
-> = TWSScreens<TClasses, TModifiers, TScreens> | TWSStyle<TClasses, TModifiers>;
+> = Exclude<
+  TWSStyleScreens<TClasses, TModifiers, TScreens> &
+    TWSStyle<TClasses, TModifiers>,
+  string
+>;
 
-type TWSStyleObjectItemVariants<
+export type TWSStyleObjectItemVariants<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
 > = {
-  variants?: Record<string, TWSStyleObjectItem<TClasses, TModifiers, TScreens>>;
+  variants?: Record<
+    string,
+    TClasses | TWSStyleObjectItem<TClasses, TModifiers, TScreens>
+  >;
 };
 
-type TWSStyleObject<
+export type TWSStyleObject<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
@@ -130,34 +141,72 @@ export class TWSFactory<
     else return classNames.join(" ");
   };
 
-  twClasses = (classes: TModifiers) => {
-    return (
-      Object.keys(classes)
-        // .map((key) => {
-        //   return classes[key as keyof TModifiers].join(" ");
-        // })
-        .join(" ")
-    );
+  twClasses = (classes: TWSStyleObject<TClasses, TModifiers, TScreens>) => {
+    return Object.keys(classes)
+      .filter((key) => key !== "variants")
+      .map((key) => {
+        const classesValue = classes[key as keyof typeof classes];
+        if (typeof classesValue === "string") return classesValue;
+        else if (Array.isArray(classesValue)) return classesValue.join(" ");
+        else {
+          const classesObj: string = this.twClasses(
+            classesValue as TWSStyleObject<TClasses, TModifiers, TScreens>
+          );
+
+          return classesObj;
+        }
+      })
+      .join(" ");
   };
 
   twStyleSheet: TWSStyleSheet<TClasses, TModifiers, TScreens> = (
     styleSheet
   ) => {
-    const result: { [key in keyof typeof styleSheet]: string } = {} as any;
+    const result: ReturnType<TWSStyleSheet<TClasses, TModifiers, TScreens>> =
+      {} as any;
 
-    // Object.keys(styleSheet).forEach((key) => {
-    //   if (typeof styleSheet[key] === "string") return styleSheet[key];
-    //   if (Array.isArray(styleSheet[key])) {
-    //     result[key] = this.twStyle(...(styleSheet[key] as TClasses[]));
-    //   } else if (typeof styleSheet[key] === "function") {
-    //     return (options: Record<string, boolean>) =>
-    //       this.twClasses(styleSheet[key] as Record<string, boolean> (options));
-    //   } else {
-    //     result[key as keyof typeof styleSheet] = this.twClasses(
-    //       styleSheet[key] as TModifiers
-    //     );
-    //   }
-    // });
+    Object.keys(styleSheet).forEach((key) => {
+      if (typeof styleSheet[key] === "string") return styleSheet[key];
+      if (Array.isArray(styleSheet[key])) {
+        (result as any)[key] = this.twStyle(...(styleSheet[key] as TClasses[]));
+      } else if (typeof styleSheet[key]["type"] === "undefined") {
+        const defaultClasses = this.twClasses(
+          styleSheet[key] as TWSStyleObject<TClasses, TModifiers, TScreens>
+        );
+        const variants = (
+          styleSheet[key] as TWSStyleObjectItemVariants<
+            TClasses,
+            TModifiers,
+            TScreens
+          >
+        )["variants"];
+        if (typeof variants !== "undefined") {
+          const variantsClasses = {} as any;
+          Object.keys(variants).forEach((a) => {
+            if (typeof variants[a] === "string")
+              return [defaultClasses, variants[a]].join(" ");
+            else if (Array.isArray(variants[a]))
+              variantsClasses[a] = [
+                defaultClasses,
+                this.twStyle(...(variants[a] as TClasses[])),
+              ].join(" ");
+            else {
+              variantsClasses[a] = [
+                defaultClasses,
+                this.twClasses(
+                  variants[a] as TWSStyleObject<TClasses, TModifiers, TScreens>
+                ),
+              ].join(" ");
+            }
+          });
+          (result as any)[key] = variantsClasses;
+        } else (result as any)[key] = defaultClasses;
+      } else {
+        // result[key as keyof typeof styleSheet] = this.twClasses(
+        //   styleSheet[key] as TModifiers
+        // );
+      }
+    });
 
     return result as any;
   };
