@@ -18,7 +18,7 @@ describe("types-test", () => {
 
     expect(x).toEqual({
       default: ["class1"],
-      mod1: ["mod1:class1"],
+      mod1: ["mod1:class1", "mod1:class2"],
     });
   });
 
@@ -29,8 +29,8 @@ describe("types-test", () => {
     };
 
     expect(x).toEqual({
-      default: ["class1"],
-      mod1: ["mod1:class1"],
+      mod1: ["mod1:class1", "mod1:class2"],
+      mod2: ["mod2:class1"],
     });
   });
 
@@ -45,8 +45,12 @@ describe("types-test", () => {
     };
 
     expect(x).toEqual({
-      sc1: ["sc1:class1"],
-      sc2: { default: ["sc2:class1"], mod1: ["sc2:mod1:class1"] },
+      sc1: ["sc1:class1", "sc1:class2"],
+      sc2: {
+        default: ["sc2:class1"],
+        mod2: ["sc2:mod2:class1"],
+        mod1: ["sc2:mod1:class1", "sc2:mod1:class1"],
+      },
     });
   });
 
@@ -66,6 +70,11 @@ describe("types-test", () => {
       default: ["class1", "class1", "class3"],
       mod1: ["mod1:class1"],
       mod2: ["mod2:class1"],
+      sc1: ["sc1:class1"],
+      sc2: {
+        default: ["sc2:class1"],
+        mod1: ["sc2:mod1:class1"],
+      },
     });
   });
 
@@ -82,13 +91,7 @@ describe("types-test", () => {
     expect(x).toEqual({
       variants: {
         test: {
-          mod1: ["mod1:class1"],
-          mod2: ["mod2:class1"],
-          sc1: "sc1:class1",
-          sc2: {
-            mod1: ["sc2:mod1:class1"],
-            mod2: ["sc2:mod2:class1"],
-          },
+          sc1: ["sc1:class1"],
         },
       },
     });
