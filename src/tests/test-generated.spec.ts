@@ -44,19 +44,22 @@ describe("test-generated-tailwind", () => {
             },
             mod1: "mod1:class1",
           },
-          secondary: ["class3"],
+          secondary: ["class3", "class2"],
+          third: "class3",
         },
       },
     });
 
     const primaryTitle = styleSheet.title["primary"];
     const secondaryTitle = styleSheet.title["secondary"];
+    const thirdTitle = styleSheet.title["third"];
 
     expect(primaryTitle).toBe(
       "class1 sc1:class1 sc1:class2 sc2:class3 mod1:class1"
     );
 
-    expect(secondaryTitle).toBe("class1 sc1:class1 sc1:class2 class3");
+    expect(secondaryTitle).toBe("class1 sc1:class1 sc1:class2 class3 class2");
+    expect(thirdTitle).toBe("class1 sc1:class1 sc1:class2 class3");
   });
 
   // it("variant values call back to return successfully", () => {

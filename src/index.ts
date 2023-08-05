@@ -184,7 +184,7 @@ export class TWSFactory<
           const variantsClasses = {} as any;
           Object.keys(variants).forEach((a) => {
             if (typeof variants[a] === "string")
-              return [defaultClasses, variants[a]].join(" ");
+              variantsClasses[a] = [defaultClasses, variants[a]].join(" ");
             else if (Array.isArray(variants[a]))
               variantsClasses[a] = [
                 defaultClasses,
