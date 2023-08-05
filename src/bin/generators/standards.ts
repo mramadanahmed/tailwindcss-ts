@@ -94,5 +94,12 @@ export const generateStandards: GeneratorFn = (_) => {
     "visible",
     "invisible",
     "collapse",
+    ".flex-row",
+    ".flex-row-reverse",
+    ".flex-col",
+    ".flex-col-reverse",
+    ".flex-wrap",
+    ".flex-wrap-reverse",
+    ".flex-no-wrap",
   ];
 };

@@ -110,13 +110,17 @@ const generateTWS = async () => {
 
   fs.mkdirSync(generatePath);
 
-  const getModifiers = (() => {
-    const screens = generateScreens(js?.theme);
+  // const getModifiers = (() => {
+  //   // const screens = generateScreens(js?.theme);
 
-    return [...twModifiers, ...screens].map(
-      (m) => `"${m}"?: \`${m}:$\{TWSClasses\}\`[];`
-    );
-  })();
+  //   // return [
+  //   //   ...,
+  //   //   // ...screens,
+  //   //   // ...screens.flatMap((s) => twModifiers.map((m) => `${s}:${m}`)),
+  //   // ]
+
+  //   return twModifiers.map((m) => `"${m}"?: \`${m}:$\{TWSClasses\}\`[];`);
+  // })();
 
   const twsClasses: string[] = [];
 
@@ -145,6 +149,8 @@ const generateTWS = async () => {
     .filter((a) => !!a)
     .join("|");
 
+  const screens = generateScreens(js?.theme);
+
   const generatedTypes = [
     `type TWSTypes = ${TWSTypes};`,
     `type TWSPreprocess = "" | "!" ;`,
@@ -154,13 +160,8 @@ const generateTWS = async () => {
     `export type TWSClasses = \`\${TWSPreprocess}\${
     | TWSTypes
     | TWSCustomTypes}\`;`,
-    `export type TWSModifiers = {
-      default: TWSClasses[];
-      ${getModifiers.join("\n")}
-    };`,
-    `export type TWSStyleSheet = {
-      [key: string]: TWSClasses[] | TWSModifiers;
-    };`,
+    `export type TWSModifiers = ${twModifiers.map((s) => `"${s}"`).join("|")};`,
+    `export type TWSScreens = ${screens.map((s) => `"${s}"`).join("|")}`,
   ].join("\n\n");
 
   fs.writeFileSync(
