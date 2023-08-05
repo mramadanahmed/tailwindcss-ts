@@ -35,17 +35,17 @@ describe("test-generated-tailwind", () => {
   it("variant values to be exist", () => {
     const styleSheet = twStyleSheet({
       title: {
-        default: "class1",
+        default: ["class1"],
         sc1: ["sc1:class1", "sc1:class2"],
         variants: {
           primary: {
             sc2: {
-              default: "sc2:class3",
+              default: ["sc2:class3"],
             },
-            mod1: "mod1:class1",
+            mod1: ["mod1:class1"],
           },
           secondary: ["class3", "class2"],
-          third: "class3",
+          third: ["class3"],
         },
       },
     });
@@ -55,11 +55,11 @@ describe("test-generated-tailwind", () => {
     const thirdTitle = styleSheet.title["third"];
 
     expect(primaryTitle).toBe(
-      "class1 sc1:class1 sc1:class2 sc2:class3 mod1:class1"
+      "class1 mod1:class1 sc1:class1 sc1:class2 sc2:class3"
     );
 
-    expect(secondaryTitle).toBe("class1 sc1:class1 sc1:class2 class3 class2");
-    expect(thirdTitle).toBe("class1 sc1:class1 sc1:class2 class3");
+    expect(secondaryTitle).toBe("class1 class2 class3 sc1:class1 sc1:class2");
+    expect(thirdTitle).toBe("class1 class3 sc1:class1 sc1:class2");
   });
 
   it("call back to return successfully", () => {
@@ -105,10 +105,10 @@ describe("test-generated-tailwind", () => {
     expect(styleSheet.subtitle({ disabled: true })["primary"]).toBe(
       "class1 class2"
     );
-    expect(styleSheet.subtitle({ disabled: false })["primary"]).toBe(" class3");
+    expect(styleSheet.subtitle({ disabled: false })["primary"]).toBe("class3");
     expect(styleSheet.subtitle({ disabled: true })["secondary"]).toBe(
       "class1 class3"
     );
-    expect(styleSheet.subtitle({ disabled: false })["secondary"]).toBe(" ");
+    expect(styleSheet.subtitle({ disabled: false })["secondary"]).toBe("");
   });
 });

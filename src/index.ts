@@ -1,25 +1,23 @@
+import uniq from "lodash/uniq";
+
 export type TWSStyle<
   TClasses extends string,
   TModifiers extends string,
   TScreen extends string = "",
 > = TScreen extends ""
   ?
-      | TClasses
       | TClasses[]
       | {
           [key in "default" | TModifiers]?: key extends "default"
-            ? TClasses | TClasses[]
-            : `${key}:${TClasses}` | `${key}:${TClasses}`[];
+            ? TClasses[]
+            : `${key}:${TClasses}`[];
         }
   :
-      | `${TScreen}:${TClasses}`
       | `${TScreen}:${TClasses}`[]
       | {
           [key in "default" | TModifiers]?: key extends "default"
-            ? `${TScreen}:${TClasses}` | `${TScreen}:${TClasses}`[]
-            :
-                | `${TScreen}:${key}:${TClasses}`
-                | `${TScreen}:${key}:${TClasses}`[];
+            ? `${TScreen}:${TClasses}`[]
+            : `${TScreen}:${key}:${TClasses}`[];
         };
 
 export type TWSStyleScreens<
@@ -34,21 +32,15 @@ export type TWSStyleObjectItem<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
-> = Exclude<
-  TWSStyleScreens<TClasses, TModifiers, TScreens> &
-    TWSStyle<TClasses, TModifiers>,
-  string
->;
+> = TWSStyleScreens<TClasses, TModifiers, TScreens> &
+  TWSStyle<TClasses, TModifiers>;
 
 export type TWSStyleObjectItemVariants<
   TClasses extends string,
   TModifiers extends string,
   TScreens extends string,
 > = {
-  variants?: Record<
-    string,
-    TClasses | TWSStyleObjectItem<TClasses, TModifiers, TScreens>
-  >;
+  variants?: Record<string, TWSStyleObjectItem<TClasses, TModifiers, TScreens>>;
 };
 
 export type TWSStyleObject<
@@ -134,42 +126,36 @@ export class TWSFactory<
   TModifiers extends string,
   TScreens extends string,
 > {
-  twStyle = (...classNames: TClasses[]) => {
-    if (typeof classNames === "string") return classNames;
-    else return classNames.join(" ");
-  };
+  twClasses = (classes: TWSStyleObjectItem<TClasses, TModifiers, TScreens>) => {
+    if (Array.isArray(classes)) return classes;
 
-  twClasses = (classes: TWSStyleObject<TClasses, TModifiers, TScreens>) => {
-    return Object.keys(classes)
+    const result: TClasses[] = Object.keys(classes)
       .filter((key) => key !== "variants")
-      .map((key) => {
+      .flatMap((key) => {
         const classesValue = classes[key as keyof typeof classes];
-        if (typeof classesValue === "string") return classesValue;
-        else if (Array.isArray(classesValue)) return classesValue.join(" ");
+        if (!classesValue) return [];
+        if (Array.isArray(classesValue)) return classesValue as TClasses[];
         else {
-          const classesObj: string = this.twClasses(
-            classesValue as TWSStyleObject<TClasses, TModifiers, TScreens>
-          );
-
-          return classesObj;
+          return this.twClasses(classesValue);
         }
-      })
-      .join(" ");
+      });
+
+    return result;
   };
+
+  twClassesArrayToString = (classes: TClasses[]) =>
+    uniq(classes).sort().join(" ");
 
   twStyleSheet: TWSStyleSheet<TClasses, TModifiers, TScreens> = (
     styleSheet
   ) => {
     const result: ReturnType<TWSStyleSheet<TClasses, TModifiers, TScreens>> =
-      {} as any;
+      {};
 
     Object.keys(styleSheet).forEach((key) => {
-      if (typeof styleSheet[key] === "string") return styleSheet[key];
-      if (Array.isArray(styleSheet[key])) {
-        (result as any)[key] = this.twStyle(...(styleSheet[key] as TClasses[]));
-      } else if (typeof styleSheet[key]["type"] === "undefined") {
+      if (typeof styleSheet[key]["type"] === "undefined") {
         const defaultClasses = this.twClasses(
-          styleSheet[key] as TWSStyleObject<TClasses, TModifiers, TScreens>
+          styleSheet[key] as TWSStyleObjectItem<TClasses, TModifiers, TScreens>
         );
         const variants = (
           styleSheet[key] as TWSStyleObjectItemVariants<
@@ -179,26 +165,19 @@ export class TWSFactory<
           >
         )["variants"];
         if (typeof variants !== "undefined") {
-          const variantsClasses = {} as any;
+          const variantsClasses: Record<string, string> = {};
           Object.keys(variants).forEach((a) => {
-            if (typeof variants[a] === "string")
-              variantsClasses[a] = [defaultClasses, variants[a]].join(" ");
-            else if (Array.isArray(variants[a]))
-              variantsClasses[a] = [
-                defaultClasses,
-                this.twStyle(...(variants[a] as TClasses[])),
-              ].join(" ");
-            else {
-              variantsClasses[a] = [
-                defaultClasses,
-                this.twClasses(
-                  variants[a] as TWSStyleObject<TClasses, TModifiers, TScreens>
-                ),
-              ].join(" ");
-            }
+            variantsClasses[a] = this.twClassesArrayToString([
+              ...defaultClasses,
+              ...this.twClasses(
+                variants[a] as TWSStyleObject<TClasses, TModifiers, TScreens>
+              ),
+            ]);
           });
           (result as any)[key] = variantsClasses;
-        } else (result as any)[key] = defaultClasses;
+        } else {
+          (result as any)[key] = this.twClassesArrayToString(defaultClasses);
+        }
       } else {
         const conditionalKey = styleSheet[key] as TWSConditional<
           TClasses,
@@ -210,33 +189,29 @@ export class TWSFactory<
           const result = conditionalKey["callback"](options);
           const defaultClasses = result.default
             .filter((a) => a.test)
-            .map((a) => {
-              if (typeof a.value === "string") return a.value;
-              else if (Array.isArray(a.value)) return a.value.join(" ");
-              return this.twClasses(
+            .flatMap((a) =>
+              this.twClasses(
                 a.value as TWSStyleObject<TClasses, TModifiers, TScreens>
-              );
-            })
-            .join(" ");
+              )
+            );
 
           if (typeof result.variants !== "undefined") {
             Object.keys(result.variants).forEach((key) => {
-              console.log("sdsdr", result.variants);
-              returnVal[key] = (result.variants as any)[key]
+              returnVal[key] = result.variants?.[key]
                 .filter((a: any) => a.test)
-                .map((a: any) => {
-                  if (typeof a.value === "string") return a.value;
-                  else if (Array.isArray(a.value)) return a.value.join(" ");
+                .flatMap((a: any) => {
                   return this.twClasses(
                     a.value as TWSStyleObject<TClasses, TModifiers, TScreens>
                   );
-                })
-                .join(" ");
+                });
 
-              returnVal[key] = [defaultClasses, returnVal[key]].join(" ");
+              returnVal[key] = this.twClassesArrayToString([
+                ...defaultClasses,
+                ...returnVal[key],
+              ]);
             });
           } else {
-            returnVal = defaultClasses;
+            returnVal = this.twClassesArrayToString(defaultClasses);
           }
 
           return returnVal;
