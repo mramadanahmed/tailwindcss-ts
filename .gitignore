@@ -4,3 +4,4 @@ node_modules
 /tws-temp/*
 /dist/*
 pnpm-lock.yaml
+coverage/*
