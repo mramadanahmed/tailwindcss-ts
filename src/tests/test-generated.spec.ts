@@ -62,11 +62,55 @@ describe("test-generated-tailwind", () => {
     expect(thirdTitle).toBe("class1 sc1:class1 sc1:class2 class3");
   });
 
-  // it("variant values call back to return successfully", () => {
-  //   const subtitle = result.subtitle({ disabled: true });
+  it("call back to return successfully", () => {
+    const styleSheet = twStyleSheet({
+      subtitle: {
+        type: "callback",
+        callbackParameters: { disabled: "" },
+        callback: ({ disabled }) => {
+          return {
+            default: [
+              { test: disabled, value: ["class1"] },
+              { test: !disabled, value: ["class2"] },
+            ],
+          };
+        },
+      },
+    });
 
-  //   expect(subtitle).toBe("class3");
-  // });
+    expect(styleSheet.subtitle({ disabled: true })).toBe("class1");
+    expect(styleSheet.subtitle({ disabled: false })).toBe("class2");
+  });
+
+  it("variant values call back to return successfully", () => {
+    const styleSheet = twStyleSheet({
+      subtitle: {
+        type: "callback",
+        callbackParameters: { disabled: "" },
+        callback: ({ disabled }) => {
+          return {
+            default: [{ test: disabled, value: ["class1"] }],
+            variants: {
+              primary: [
+                { test: disabled, value: ["class2"] },
+                { test: !disabled, value: ["class3"] },
+              ],
+              secondary: [{ test: disabled, value: ["class3"] }],
+            },
+          };
+        },
+      },
+    });
+
+    expect(styleSheet.subtitle({ disabled: true })["primary"]).toBe(
+      "class1 class2"
+    );
+    expect(styleSheet.subtitle({ disabled: false })["primary"]).toBe(" class3");
+    expect(styleSheet.subtitle({ disabled: true })["secondary"]).toBe(
+      "class1 class3"
+    );
+    expect(styleSheet.subtitle({ disabled: false })["secondary"]).toBe(" ");
+  });
 });
 
 //

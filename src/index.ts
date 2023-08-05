@@ -99,11 +99,9 @@ export type TWSConditionalCheck<
   T,
 > = T extends TWSConditional<TClasses, TModifiers, TScreens>
   ? ReturnType<T["callback"]> extends { variants: any }
-    ? {
-        [aKey in keyof ReturnType<T["callback"]>["variants"]]: (options: {
-          [key in keyof T["callbackParameters"]]: boolean;
-        }) => string;
-      }
+    ? (options: {
+        [key in keyof T["callbackParameters"]]: boolean;
+      }) => { [aKey in keyof ReturnType<T["callback"]>["variants"]]: string }
     : (options: {
         [key in keyof T["callbackParameters"]]: boolean;
       }) => string
@@ -202,9 +200,49 @@ export class TWSFactory<
           (result as any)[key] = variantsClasses;
         } else (result as any)[key] = defaultClasses;
       } else {
-        // result[key as keyof typeof styleSheet] = this.twClasses(
-        //   styleSheet[key] as TModifiers
-        // );
+        const conditionalKey = styleSheet[key] as TWSConditional<
+          TClasses,
+          TModifiers,
+          TScreens
+        >;
+        const defaultClasses = (options: any) => {
+          let returnVal = {} as any;
+          const result = conditionalKey["callback"](options);
+          const defaultClasses = result.default
+            .filter((a) => a.test)
+            .map((a) => {
+              if (typeof a.value === "string") return a.value;
+              else if (Array.isArray(a.value)) return a.value.join(" ");
+              return this.twClasses(
+                a.value as TWSStyleObject<TClasses, TModifiers, TScreens>
+              );
+            })
+            .join(" ");
+
+          if (typeof result.variants !== "undefined") {
+            Object.keys(result.variants).forEach((key) => {
+              console.log("sdsdr", result.variants);
+              returnVal[key] = (result.variants as any)[key]
+                .filter((a: any) => a.test)
+                .map((a: any) => {
+                  if (typeof a.value === "string") return a.value;
+                  else if (Array.isArray(a.value)) return a.value.join(" ");
+                  return this.twClasses(
+                    a.value as TWSStyleObject<TClasses, TModifiers, TScreens>
+                  );
+                })
+                .join(" ");
+
+              returnVal[key] = [defaultClasses, returnVal[key]].join(" ");
+            });
+          } else {
+            returnVal = defaultClasses;
+          }
+
+          return returnVal;
+        };
+
+        (result as any)[key] = defaultClasses;
       }
     });
 
