@@ -57,20 +57,34 @@ export type TWSConditional<
 > = {
   type: "callback";
   callbackParameters: { [key: string]: "" };
-  callback: (options: { [key: string]: boolean }) => {
+  callback: (options: {
+    [key: string]: boolean;
+  }) => TWSStyleObjectItemWithRules<TClasses, TModifiers, TScreens>;
+};
+
+export type TWSConditionalRules<
+  TClasses extends string,
+  TModifiers extends string,
+  TScreens extends string,
+> = {
+  rules?: {
+    test: boolean;
+    value: TWSStyleObjectItem<TClasses, TModifiers, TScreens>;
+  }[];
+};
+
+export type TWSStyleObjectItemWithRules<
+  TClasses extends string,
+  TModifiers extends string,
+  TScreens extends string,
+> = TWSStyleObjectItem<TClasses, TModifiers, TScreens> &
+  TWSConditionalRules<TClasses, TModifiers, TScreens> & {
     variants?: Record<
       string,
-      {
-        test: boolean;
-        value: TWSStyleObjectItem<TClasses, TModifiers, TScreens>;
-      }[]
+      TWSConditionalRules<TClasses, TModifiers, TScreens> &
+        TWSStyleObjectItem<TClasses, TModifiers, TScreens>
     >;
-    default: {
-      test: boolean;
-      value: TWSStyleObjectItem<TClasses, TModifiers, TScreens>;
-    }[];
   };
-};
 
 export type TWSStyleSheetItem<
   TClasses extends string,
@@ -126,11 +140,13 @@ export class TWSFactory<
   TModifiers extends string,
   TScreens extends string,
 > {
-  twClasses = (classes: TWSStyleObjectItem<TClasses, TModifiers, TScreens>) => {
+  private twClasses = (
+    classes: TWSStyleObjectItem<TClasses, TModifiers, TScreens>
+  ) => {
     if (Array.isArray(classes)) return classes;
 
     const result: TClasses[] = Object.keys(classes)
-      .filter((key) => key !== "variants")
+      .filter((key) => key !== "variants" && key !== "rules")
       .flatMap((key) => {
         const classesValue = classes[key as keyof typeof classes];
         if (!classesValue) return [];
@@ -143,8 +159,33 @@ export class TWSFactory<
     return result;
   };
 
-  twClassesArrayToString = (classes: TClasses[]) =>
+  private twClassesArrayToString = (classes: TClasses[]) =>
     uniq(classes).sort().join(" ");
+
+  private twCalculateClasses = (
+    item: TWSStyleObject<TClasses, TModifiers, TScreens>
+  ) => {
+    let result: Record<string, TClasses[]> | TClasses[] = {};
+
+    const defaultClasses = this.twClasses(item);
+    const variants = item["variants"];
+    if (typeof variants !== "undefined") {
+      const variantsClasses: Record<string, TClasses[]> = {};
+      Object.keys(variants).forEach((a) => {
+        variantsClasses[a] = [
+          ...defaultClasses,
+          ...this.twClasses(
+            variants[a] as TWSStyleObject<TClasses, TModifiers, TScreens>
+          ),
+        ];
+      });
+      result = variantsClasses;
+    } else {
+      result = defaultClasses;
+    }
+
+    return result;
+  };
 
   twStyleSheet: TWSStyleSheet<TClasses, TModifiers, TScreens> = (
     styleSheet
@@ -154,29 +195,21 @@ export class TWSFactory<
 
     Object.keys(styleSheet).forEach((key) => {
       if (typeof styleSheet[key]["type"] === "undefined") {
-        const defaultClasses = this.twClasses(
-          styleSheet[key] as TWSStyleObjectItem<TClasses, TModifiers, TScreens>
+        const classesList = this.twCalculateClasses(
+          styleSheet[key] as TWSStyleObject<TClasses, TModifiers, TScreens>
         );
-        const variants = (
-          styleSheet[key] as TWSStyleObjectItemVariants<
-            TClasses,
-            TModifiers,
-            TScreens
-          >
-        )["variants"];
-        if (typeof variants !== "undefined") {
-          const variantsClasses: Record<string, string> = {};
-          Object.keys(variants).forEach((a) => {
-            variantsClasses[a] = this.twClassesArrayToString([
-              ...defaultClasses,
-              ...this.twClasses(
-                variants[a] as TWSStyleObject<TClasses, TModifiers, TScreens>
-              ),
-            ]);
-          });
-          (result as any)[key] = variantsClasses;
+
+        if (Array.isArray(classesList)) {
+          (result as any)[key] = this.twClassesArrayToString(classesList);
         } else {
-          (result as any)[key] = this.twClassesArrayToString(defaultClasses);
+          const variantsObject = {};
+          Object.keys(classesList).forEach(
+            (variant) =>
+              ((variantsObject as any)[variant] = this.twClassesArrayToString(
+                classesList[variant]
+              ))
+          );
+          (result as any)[key] = variantsObject;
         }
       } else {
         const conditionalKey = styleSheet[key] as TWSConditional<
@@ -187,7 +220,20 @@ export class TWSFactory<
         const defaultClasses = (options: any) => {
           let returnVal = {} as any;
           const result = conditionalKey["callback"](options);
-          const defaultClasses = result.default
+          const defaultClasses = this.twCalculateClasses(
+            result as TWSStyleObject<TClasses, TModifiers, TScreens>
+          );
+          const defaultRulesClasses = (result.rules ?? [])
+            .map((a) => {
+              if (typeof a.test !== "boolean") {
+                throw new Error(
+                  `tws conditional rules test property should be boolean value. At ${JSON.stringify(
+                    a
+                  )}`
+                );
+              }
+              return a;
+            })
             .filter((a) => a.test)
             .flatMap((a) =>
               this.twClasses(
@@ -197,21 +243,36 @@ export class TWSFactory<
 
           if (typeof result.variants !== "undefined") {
             Object.keys(result.variants).forEach((key) => {
-              returnVal[key] = result.variants?.[key]
+              returnVal[key] = (result.variants?.[key].rules ?? [])
+                .map((a) => {
+                  if (typeof a.test !== "boolean") {
+                    throw new Error(
+                      `tws conditional rules test property should be boolean value. At ${JSON.stringify(
+                        a
+                      )}`
+                    );
+                  }
+                  return a;
+                })
                 .filter((a: any) => a.test)
                 .flatMap((a: any) => {
-                  return this.twClasses(
+                  const classes = this.twClasses(
                     a.value as TWSStyleObject<TClasses, TModifiers, TScreens>
                   );
+                  return [
+                    ...classes,
+                    ...defaultRulesClasses,
+                    ...(defaultClasses as any)[key],
+                  ];
                 });
 
-              returnVal[key] = this.twClassesArrayToString([
-                ...defaultClasses,
-                ...returnVal[key],
-              ]);
+              returnVal[key] = this.twClassesArrayToString(returnVal[key]);
             });
           } else {
-            returnVal = this.twClassesArrayToString(defaultClasses);
+            returnVal = this.twClassesArrayToString([
+              ...(defaultClasses as TClasses[]),
+              ...defaultRulesClasses,
+            ]);
           }
 
           return returnVal;

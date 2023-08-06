@@ -69,17 +69,18 @@ describe("test-generated-tailwind", () => {
         callbackParameters: { disabled: "" },
         callback: ({ disabled }) => {
           return {
-            default: [
-              { test: disabled, value: ["class1"] },
-              { test: !disabled, value: ["class2"] },
+            default: ["class1"],
+            rules: [
+              { test: disabled, value: ["class2"] },
+              { test: !disabled, value: ["class3"] },
             ],
           };
         },
       },
     });
 
-    expect(styleSheet.subtitle({ disabled: true })).toBe("class1");
-    expect(styleSheet.subtitle({ disabled: false })).toBe("class2");
+    expect(styleSheet.subtitle({ disabled: true })).toBe("class1 class2");
+    expect(styleSheet.subtitle({ disabled: false })).toBe("class1 class3");
   });
 
   it("variant values call back to return successfully", () => {
@@ -89,13 +90,15 @@ describe("test-generated-tailwind", () => {
         callbackParameters: { disabled: "" },
         callback: ({ disabled }) => {
           return {
-            default: [{ test: disabled, value: ["class1"] }],
+            default: ["class1"],
             variants: {
-              primary: [
-                { test: disabled, value: ["class2"] },
-                { test: !disabled, value: ["class3"] },
-              ],
-              secondary: [{ test: disabled, value: ["class3"] }],
+              primary: {
+                rules: [
+                  { test: disabled, value: ["class2"] },
+                  { test: !disabled, value: ["class3"] },
+                ],
+              },
+              secondary: { rules: [{ test: disabled, value: ["class3"] }] },
             },
           };
         },
@@ -105,10 +108,38 @@ describe("test-generated-tailwind", () => {
     expect(styleSheet.subtitle({ disabled: true })["primary"]).toBe(
       "class1 class2"
     );
-    expect(styleSheet.subtitle({ disabled: false })["primary"]).toBe("class3");
+    expect(styleSheet.subtitle({ disabled: false })["primary"]).toBe(
+      "class1 class3"
+    );
     expect(styleSheet.subtitle({ disabled: true })["secondary"]).toBe(
       "class1 class3"
     );
     expect(styleSheet.subtitle({ disabled: false })["secondary"]).toBe("");
+  });
+
+  it("variant values call back parameters should be matched", () => {
+    const styleSheet = twStyleSheet({
+      subtitle: {
+        type: "callback",
+        callbackParameters: { disabled: "" },
+        callback: ({ disabled, active }) => {
+          return {
+            default: ["class1"],
+            rules: [
+              { test: active, value: ["class1"] },
+              { test: disabled, value: ["class2"] },
+            ],
+          };
+        },
+      },
+    });
+
+    try {
+      styleSheet.subtitle({ disabled: true });
+    } catch (err) {
+      expect((err as Error).message).toBe(
+        'tws conditional rules test property should be boolean value. At {"value":["class1"]}'
+      );
+    }
   });
 });

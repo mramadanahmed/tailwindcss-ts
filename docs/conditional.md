@@ -10,18 +10,26 @@ Following is example for using variants:
             type:'callback'
             callbackParameters:{disabled:""}
             callback({disabled}) => ({
-                default:[{test:disabled,value:["text-green-300"]}]
+                default:"text-green-300",
+                rules:[{
+                    test:disabled,
+                    value:["text-green-500"]
+                }]
             })
         },
         subtitle: {
             type:'callback'
             callbackParameters:{disabled:""}
             callback({disabled}) => ({
-                default:[{test:disabled,value:["text-green-300"]}]
+                default:["text-green-300"]
                 variants: {
-                    primary:[
-                        {test:disabled,value:["text-green-200"]},{test:!disabled,value:["text-green-400"]}
-                    ]
+                    primary:{
+                        default:["bg-red-300"]
+                        rules:[
+                            {test:disabled,value:["text-green-200"]},
+                            {test:!disabled,value:["text-green-400"]}
+                        ]
+                    }
                 }
             })
         },
